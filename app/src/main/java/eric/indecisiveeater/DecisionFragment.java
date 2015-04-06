@@ -8,10 +8,17 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 
+import butterknife.ButterKnife;
+import butterknife.InjectView;
+
 /**
  * Created by Eric on 3/26/2015.
  */
 public class DecisionFragment extends Fragment {
+    @InjectView(R.id.Nearby_Button) Button mNearbySearchButton;
+    @InjectView(R.id.Takeout_Button) Button mTakeoutButton;
+    @InjectView(R.id.Delivery_Button) Button mDeliveryButton;
+    @InjectView(R.id.Indecisive_Button) Button mIndecisiveButton;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -21,8 +28,8 @@ public class DecisionFragment extends Fragment {
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup parent, Bundle savedInstanceState) {
         View v = inflater.inflate(R.layout.fragment_decision, parent, false);
+        ButterKnife.inject(this, v);
 
-        Button mNearbySearchButton = (Button) v.findViewById(R.id.Nearby_Button);
         mNearbySearchButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -31,7 +38,6 @@ public class DecisionFragment extends Fragment {
             }
         });
 
-        Button mTakeoutButton = (Button) v.findViewById(R.id.Takeout_Button);
         mTakeoutButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -39,7 +45,6 @@ public class DecisionFragment extends Fragment {
             }
         });
 
-        Button mDeliveryButton = (Button) v.findViewById(R.id.Delivery_Button);
         mDeliveryButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -47,13 +52,13 @@ public class DecisionFragment extends Fragment {
             }
         });
 
-        Button mIndecisiveButton = (Button) v.findViewById(R.id.Indecisive_Button);
         mIndecisiveButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
 
             }
         });
+
         return v;
     }
 }

@@ -9,6 +9,6 @@ public class SearchActivity extends SingleFragmentActivity {
 
     @Override
     protected Fragment createFragment() {
-        return new NearbyFragment();
+        return new SearchFragment();
     }
 }
