@@ -15,7 +15,7 @@
             android:name="com.google.android.geo.AIzaSyCv8ZdUf5LgMzBjOqAVmeRYCERwg_SwO_0"
             android:value="AIzaSyCv8ZdUf5LgMzBjOqAVmeRYCERwg_SwO_0"/>
         <activity
-            android:name="eric.indecisiveeater.DecisionActivity"
+            android:name=".decision.DecisionActivity"
             android:label="@string/app_name" >
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -23,7 +23,7 @@
             </intent-filter>
         </activity>
 
-        <activity android:name="eric.indecisiveeater.SearchActivity">
+        <activity android:name=".result.ResultActivity">
 
         </activity>
     </application>
