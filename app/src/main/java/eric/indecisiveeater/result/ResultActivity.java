@@ -20,7 +20,7 @@ import eric.indecisiveeater.R;
 public class ResultActivity extends ActionBarActivity {
     @InjectView(R.id.viewpager) ViewPager mViewPager;
     ResultPagerAdapter mResultPagerAdapter;
-    private String[] mRestaurantList;
+    private String[] mRestaurantNames, mRestaurantAddresses, mRestaurantRatings;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -28,7 +28,9 @@ public class ResultActivity extends ActionBarActivity {
         setContentView(R.layout.activity_swipe);
         ButterKnife.inject(this);
 
-        mRestaurantList = getIntent().getStringArrayExtra("LIST_OF_RESULTS");
+        mRestaurantNames = getIntent().getStringArrayExtra("RESULT_NAMES");
+        mRestaurantAddresses = getIntent().getStringArrayExtra("RESULT_ADDRESSES");
+        mRestaurantRatings = getIntent().getStringArrayExtra("RESULT_RATINGS");
         FragmentManager manager = getSupportFragmentManager();
         mResultPagerAdapter = new ResultPagerAdapter(manager);
         mViewPager.setAdapter(mResultPagerAdapter);
@@ -67,14 +69,16 @@ public class ResultActivity extends ActionBarActivity {
             ResultFragment mResultFragment = new ResultFragment();
             Bundle data = new Bundle();
             data.putInt("current_page", position);
-            data.putString("result_name", mRestaurantList[position]);
+            data.putString("result_name", mRestaurantNames[position]);
+            data.putString("result_address", mRestaurantAddresses[position]);
+            data.putString("result_rating", mRestaurantRatings[position]);
             mResultFragment.setArguments(data);
             return mResultFragment;
         }
 
         @Override
         public int getCount() {
-            return mRestaurantList.length;
+            return mRestaurantNames.length;
         }
     }
 }

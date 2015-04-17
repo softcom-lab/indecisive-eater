@@ -219,7 +219,7 @@ public class DecisionFragment extends Fragment implements GoogleApiClient.Connec
         }
     }
 
-    private class GooglePlacesSearch extends AsyncTask<String, Void, String> {
+    private class GooglePlacesSearch extends AsyncTask<String, Void, String[]> {
 
         //You must uncomment the code in readStream() when you uncomment the variable below.
         //private String mNextPageToken;
@@ -234,12 +234,12 @@ public class DecisionFragment extends Fragment implements GoogleApiClient.Connec
         }
 
         @Override
-        protected String doInBackground(String... params) {
+        protected String[] doInBackground(String... params) {
             try {
                 //Create a new URL object in order to open the connection to the Nearby Search results
                 URL placeURL = new URL(params[0]);
                 HttpsURLConnection httpConnection = (HttpsURLConnection) placeURL.openConnection();
-                String mNamesOfResults = readStream(httpConnection.getInputStream());
+                String[] mResultInformation = readStream(httpConnection.getInputStream());
                 httpConnection.disconnect();
                 //This currently does NOT comply with google's terms of service.
                 //DO NOT use this until user interaction makes this happen.
@@ -252,26 +252,29 @@ public class DecisionFragment extends Fragment implements GoogleApiClient.Connec
 //                    mNamesOfResults += readStream(httpConnection.getInputStream());
 //                    httpConnection.disconnect();
 //                }
-                return mNamesOfResults;
+                return mResultInformation;
             } catch (IOException e) {
-                return "Search error";
+                return null;
             }
         }
 
         //Takes a list of names, splits them into an array, and passes them into a new activity for display
         @Override
-        protected void onPostExecute(String s) {
+        protected void onPostExecute(String[] s) {
             super.onPostExecute(s);
             Intent i = new Intent(getActivity(), ResultActivity.class);
-            i.putExtra("LIST_OF_RESULTS", s.split("\n"));
+            i.putExtra("RESULT_NAMES", s[0].split("\n"));
+            i.putExtra("RESULT_ADDRESSES", s[1].split("\n"));
+            i.putExtra("RESULT_RATINGS", s[2].split("\n"));
             loadingDialog.dismiss();
             startActivity(i);
         }
 
         @TargetApi(19)
-        private String readStream(InputStream in) {
+        private String[] readStream(InputStream in) {
             try (BufferedReader reader = new BufferedReader(new InputStreamReader(in))) {
-                String line, jsonData = "", listOfResults = "";
+                String line, jsonData = "", listOfNames = "", listOfAddresses = "";
+                String[] resultInformation = new String[3];
                 //Create the JSONObject by concatenating each line of the webpage into a string
                 while ((line = reader.readLine()) != null) {
                     jsonData += line;
@@ -288,10 +291,12 @@ public class DecisionFragment extends Fragment implements GoogleApiClient.Connec
                     JSONArray jsonArray = (jsonObject.getJSONArray("results"));
                     for (int i = 0; i < jsonArray.length(); i++) {
                         JSONObject result = jsonArray.getJSONObject(i);
-                        listOfResults += result.getString("name") + "\n";
+                        resultInformation[0] += result.getString("name") + "\n";
+                        resultInformation[1] += result.getString("vicinity") + "\n";
+                        resultInformation[2] += result.getString("rating") + "\n";
                     }
                 }
-                return listOfResults;
+                return resultInformation;
             } catch (IOException | JSONException e) {
                 e.printStackTrace();
                 return null;

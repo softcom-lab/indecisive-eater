@@ -15,6 +15,7 @@ import eric.indecisiveeater.R;
 
 public class ResultFragment extends android.support.v4.app.Fragment {
     @InjectView(R.id.result_name) TextView mResultName;
+    @InjectView(R.id.result_details) TextView mResultDetails;
     @InjectView(R.id.details_button) Button mDetailsButton;
 
     @Override
@@ -28,6 +29,8 @@ public class ResultFragment extends android.support.v4.app.Fragment {
         ButterKnife.inject(this, v);
 
         mResultName.setText(getArguments().getString("result_name"));
+        mResultDetails.setText(getArguments().getString("result_location") + "\n" +
+                               getArguments().getString("result_rating"));
 
         mDetailsButton.setOnClickListener(new View.OnClickListener() {
             @Override
