@@ -274,7 +274,7 @@ public class DecisionFragment extends Fragment implements GoogleApiClient.Connec
         private String[] readStream(InputStream in) {
             try (BufferedReader reader = new BufferedReader(new InputStreamReader(in))) {
                 String line, jsonData = "", listOfNames = "", listOfAddresses = "";
-                String[] resultInformation = new String[3];
+                String[] resultInformation = {"", "", ""};
                 //Create the JSONObject by concatenating each line of the webpage into a string
                 while ((line = reader.readLine()) != null) {
                     jsonData += line;
@@ -293,7 +293,11 @@ public class DecisionFragment extends Fragment implements GoogleApiClient.Connec
                         JSONObject result = jsonArray.getJSONObject(i);
                         resultInformation[0] += result.getString("name") + "\n";
                         resultInformation[1] += result.getString("vicinity") + "\n";
-                        resultInformation[2] += result.getString("rating") + "\n";
+                        if (!result.isNull("rating")) {
+                            resultInformation[2] += result.getString("rating") + "\n";
+                        } else {
+                            resultInformation[2] += "n/a\n";
+                        }
                     }
                 }
                 return resultInformation;

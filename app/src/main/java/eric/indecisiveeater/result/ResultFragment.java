@@ -29,8 +29,8 @@ public class ResultFragment extends android.support.v4.app.Fragment {
         ButterKnife.inject(this, v);
 
         mResultName.setText(getArguments().getString("result_name"));
-        mResultDetails.setText(getArguments().getString("result_location") + "\n" +
-                               getArguments().getString("result_rating"));
+        mResultDetails.setText(getArguments().getString("result_address") + "\n" +
+                               "Rating: " + getArguments().getString("result_rating"));
 
         mDetailsButton.setOnClickListener(new View.OnClickListener() {
             @Override
