@@ -22,6 +22,8 @@ import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.GooglePlayServicesUtil;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.location.ActivityRecognition;
+import com.google.android.gms.location.LocationListener;
+import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.location.places.Places;
 
@@ -34,17 +36,20 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.URL;
+import java.text.DecimalFormat;
+import java.util.ArrayList;
 
 import javax.net.ssl.HttpsURLConnection;
 
 import butterknife.ButterKnife;
 import butterknife.InjectView;
-import eric.indecisiveeater.result.ResultActivity;
+import eric.indecisiveeater.Result;
 import eric.indecisiveeater.R;
+import eric.indecisiveeater.result.CardsActivity;
 
 //Created by Eric on 3/26/2015.
 
-public class DecisionFragment extends Fragment implements GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener {
+public class DecisionFragment extends Fragment implements GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener, LocationListener {
     @InjectView(R.id.Nearby_Button) Button mNearbySearchButton;
     @InjectView(R.id.Takeout_Button) Button mTakeoutButton;
     @InjectView(R.id.Delivery_Button) Button mDeliveryButton;
@@ -82,6 +87,7 @@ public class DecisionFragment extends Fragment implements GoogleApiClient.Connec
         mNearbySearchButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                requestLocation();
                 requestNearbyPlaces("restaurant");
             }
         });
@@ -89,6 +95,7 @@ public class DecisionFragment extends Fragment implements GoogleApiClient.Connec
         mTakeoutButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                requestLocation();
                 requestNearbyPlaces("meal_takeaway");
             }
         });
@@ -96,6 +103,7 @@ public class DecisionFragment extends Fragment implements GoogleApiClient.Connec
         mDeliveryButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                requestLocation();
                 requestNearbyPlaces("meal_delivery");
             }
         });
@@ -138,9 +146,10 @@ public class DecisionFragment extends Fragment implements GoogleApiClient.Connec
     @Override
     public void onConnected(Bundle connectionHint) {
         //Connection successful, get current location here.
-        mLastLocation = LocationServices.FusedLocationApi.getLastLocation(mGoogleApiClient);
         if (mLastLocation != null) {
             Toast.makeText(this.getActivity(), "Location acquired", Toast.LENGTH_SHORT).show();
+        } else {
+            mLastLocation = LocationServices.FusedLocationApi.getLastLocation(mGoogleApiClient);
         }
     }
 
@@ -185,6 +194,20 @@ public class DecisionFragment extends Fragment implements GoogleApiClient.Connec
         }
     }
 
+    private void requestLocation() {
+        LocationRequest mLocationRequest = new LocationRequest();
+        mLocationRequest.setInterval(10000);
+        mLocationRequest.setFastestInterval(5000);
+        mLocationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
+        LocationServices.FusedLocationApi.requestLocationUpdates(mGoogleApiClient, mLocationRequest, this);
+    }
+
+    @Override
+    public void onLocationChanged(Location location) {
+        mLastLocation = location;
+        LocationServices.FusedLocationApi.removeLocationUpdates(mGoogleApiClient, this);
+    }
+
     private void checkPlayServiceAvailability() {
         final int PLAY_SERVICE_REQUEST_CODE = 1;
         //Checks if the user device has the correct version of Google Play Services installed
@@ -219,7 +242,7 @@ public class DecisionFragment extends Fragment implements GoogleApiClient.Connec
         }
     }
 
-    private class GooglePlacesSearch extends AsyncTask<String, Void, String[]> {
+    private class GooglePlacesSearch extends AsyncTask<String, Void, ArrayList<Result>> {
 
         //You must uncomment the code in readStream() when you uncomment the variable below.
         //private String mNextPageToken;
@@ -234,24 +257,13 @@ public class DecisionFragment extends Fragment implements GoogleApiClient.Connec
         }
 
         @Override
-        protected String[] doInBackground(String... params) {
+        protected ArrayList<Result> doInBackground(String... params) {
             try {
                 //Create a new URL object in order to open the connection to the Nearby Search results
                 URL placeURL = new URL(params[0]);
                 HttpsURLConnection httpConnection = (HttpsURLConnection) placeURL.openConnection();
-                String[] mResultInformation = readStream(httpConnection.getInputStream());
+                ArrayList<Result> mResultInformation = readStream(httpConnection.getInputStream());
                 httpConnection.disconnect();
-                //This currently does NOT comply with google's terms of service.
-                //DO NOT use this until user interaction makes this happen.
-
-                //Sleep 1 second before request the next page of 20 results
-//                Thread.sleep(1000);
-//                if (!mNextPageToken.isEmpty()) {
-//                    placeURL = new URL(params[0]+"&pagetoken="+mNextPageToken);
-//                    httpConnection = (HttpsURLConnection) placeURL.openConnection();
-//                    mNamesOfResults += readStream(httpConnection.getInputStream());
-//                    httpConnection.disconnect();
-//                }
                 return mResultInformation;
             } catch (IOException e) {
                 return null;
@@ -260,47 +272,52 @@ public class DecisionFragment extends Fragment implements GoogleApiClient.Connec
 
         //Takes a list of names, splits them into an array, and passes them into a new activity for display
         @Override
-        protected void onPostExecute(String[] s) {
-            super.onPostExecute(s);
-            Intent i = new Intent(getActivity(), ResultActivity.class);
-            i.putExtra("RESULT_NAMES", s[0].split("\n"));
-            i.putExtra("RESULT_ADDRESSES", s[1].split("\n"));
-            i.putExtra("RESULT_RATINGS", s[2].split("\n"));
+        protected void onPostExecute(ArrayList<Result> list) {
+            super.onPostExecute(list);
+            Intent i = new Intent(getActivity(), CardsActivity.class);
+            i.putParcelableArrayListExtra("RESULTS", list);
             loadingDialog.dismiss();
             startActivity(i);
         }
 
         @TargetApi(19)
-        private String[] readStream(InputStream in) {
+        private ArrayList<Result> readStream(InputStream in) {
             try (BufferedReader reader = new BufferedReader(new InputStreamReader(in))) {
-                String line, jsonData = "", listOfNames = "", listOfAddresses = "";
-                String[] resultInformation = {"", "", ""};
-                //Create the JSONObject by concatenating each line of the webpage into a string
+                String line, jsonData = "";
+                ArrayList<Result> mResultList = new ArrayList<>();
+                //Create the JSONObject by concatenating each line of the web page into a string
                 while ((line = reader.readLine()) != null) {
                     jsonData += line;
                 }
                 JSONObject jsonObject = new JSONObject(jsonData);
                 //Check if there are any results returned by the API
                 if (!jsonObject.isNull("results")) {
-                    //If there are more than 20 results,
-                    // store the page token into mNextPageToken for the next HTTPURLConnection
-
-                    //mNextPageToken = jsonObject.optString("next_page_token");
 
                     //Obtain name field of all the results and store them each on a separate line
                     JSONArray jsonArray = (jsonObject.getJSONArray("results"));
                     for (int i = 0; i < jsonArray.length(); i++) {
                         JSONObject result = jsonArray.getJSONObject(i);
-                        resultInformation[0] += result.getString("name") + "\n";
-                        resultInformation[1] += result.getString("vicinity") + "\n";
+                        Location location = new Location("result");
+                        location.setLatitude(result.getJSONObject("geometry").getJSONObject("location").getDouble("lat"));
+                        location.setLongitude(result.getJSONObject("geometry").getJSONObject("location").getDouble("lng"));
+                        mResultList.add(new Result(result.getString("name"),
+                                                   result.getString("vicinity"),
+                                                   result.getString("place_id"),
+                                                   new DecimalFormat("#.##").format(mLastLocation.distanceTo(location) / (float) 1600)));
                         if (!result.isNull("rating")) {
-                            resultInformation[2] += result.getString("rating") + "\n";
-                        } else {
-                            resultInformation[2] += "n/a\n";
+                            mResultList.get(mResultList.size()-1).setRating(result.getString("rating"));
+                        }
+                        if (!result.isNull("photos")) {
+                            try {
+                                mResultList.get(mResultList.size() - 1)
+                                        .setIcon(result.getJSONArray("photos").getJSONObject(0).getString("photo_reference"));
+                            } catch (Exception e) {
+                                e.printStackTrace();
+                            }
                         }
                     }
                 }
-                return resultInformation;
+                return mResultList;
             } catch (IOException | JSONException e) {
                 e.printStackTrace();
                 return null;
